@@ -645,7 +645,12 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
         case kIOMessageSystemWillPowerOn:
             break;
         case kIOMessageSystemHasPoweredOn:
-			usleep(100000);
+			while(run)
+			{
+				if (VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00)) != -1)
+					break;
+				usleep(10000);
+			}
 			printf( "Re-init alc256...\n" );
 			alc256Init();
 			awake = true;
