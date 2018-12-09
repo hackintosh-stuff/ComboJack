@@ -33,6 +33,9 @@
 #include <IOKit/IOMessage.h>
 #include <IOKit/pwr_mgt/IOPMLib.h>
 
+#include "PCI.h"
+//#include "Tables.h"
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -137,6 +140,14 @@ bool awake = false;
 io_connect_t  root_port;
 io_object_t   notifierObject;
 struct stat consoleinfo;
+
+//get device id
+//uint32_t vendor = 0;
+//uint32_t device = 0;
+long codecID = 0;
+uint32_t subVendor = 0;
+uint32_t subDevice = 0;
+
 //
 // Open connection to IOService
 //
@@ -182,6 +193,15 @@ uint32_t OpenServiceConnection()
     }
     
     return kernel_return_status; // 0 if successful
+}
+
+int indexOf(int *array, int array_size, int number) {
+    for (int i = 0; i < array_size; ++i) {
+        if (array[i] == number) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 //
@@ -612,26 +632,39 @@ void sigHandler(int signo)
     }
 }
 
-void alc256Init()
+//Codec fixup, invoked when boot/wake
+void alcInit()
 {
 	fprintf(stderr, "Init alc256.\n");
+    int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 	
-	//fixup
-	VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x25));
-	VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
-	
-	//ALC256_FIXUP_DELL_XPS_13_HEADPHONE_NOISE
-	VerbCommand(HDA_VERB(0x20, AC_VERB_SET_COEF_INDEX, 0x36));
-	VerbCommand(HDA_VERB(0x20, AC_VERB_SET_PROC_COEF, 0x1737));
-	
-	//ALC255_FIXUP_DELL1_MIC_NO_PRESENCE -> ALC255_FIXUP_HEADSET_MODE -> alc255_set_default_jack_type
-	WRITE_COEF(0x1b, 0x884b);
-	WRITE_COEF(0x45, 0xd089);
-	WRITE_COEF(0x1b, 0x084b);
-	WRITE_COEF(0x46, 0x0004);
-	WRITE_COEF(0x1b, 0x0c4b);
+    if (indexOf(xps13SubDev, 3, subDevice) != -1 && subVendor == 0x1028)
+    {
+		fprintf(stderr, "Fix XPS 13.\n");
+        VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x25));
+        VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+        //ALC256_FIXUP_DELL_XPS_13_HEADPHONE_NOISE
+        VerbCommand(HDA_VERB(0x20, AC_VERB_SET_COEF_INDEX, 0x36));
+        VerbCommand(HDA_VERB(0x20, AC_VERB_SET_PROC_COEF, 0x1737));
+        //ALC255_FIXUP_DELL1_MIC_NO_PRESENCE -> ALC255_FIXUP_HEADSET_MODE -> alc255_set_default_jack_type
+        WRITE_COEF(0x1b, 0x884b);
+        WRITE_COEF(0x45, 0xd089);
+        WRITE_COEF(0x1b, 0x084b);
+        WRITE_COEF(0x46, 0x0004);
+        WRITE_COEF(0x1b, 0x0c4b);
+    }
+    else
+    {
+        VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24));
+        VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x20));
+        VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+    }
+    
+    //VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+    
 }
 
+// Sleep/Wake event callback function, calls the fixup function
 void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument )
 {
     switch ( messageType )
@@ -652,7 +685,7 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
 				usleep(10000);
 			}
 			printf( "Re-init alc256...\n" );
-			alc256Init();
+			alcInit();
 			awake = true;
         	break;
         default:
@@ -660,6 +693,7 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
     }
 }
 
+// start cfrunloop that listen to wakeup event
 void watcher(void)
 {
     IONotificationPortRef  notifyPortRef;
@@ -679,12 +713,60 @@ void watcher(void)
 	}
 }
 
+
+//Get primary onboard audio device info, adapted from DPCIManager
+void getAudioID()
+{
+    io_iterator_t itThis;
+    io_service_t service;
+    io_service_t parent;
+    io_name_t name;
+    if (IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("AppleHDAController"), &itThis) == KERN_SUCCESS){
+        while((service = IOIteratorNext(itThis))) {
+            IORegistryEntryGetParentEntry(service, kIOServicePlane, &parent);
+            IORegistryEntryGetName(parent, name);
+            if (!strcmp(name, "HDEF") || !strcmp(name, "HDAS")){
+                io_service_t child;
+                pciDevice *audio = [pciDevice create:parent];
+                io_iterator_t itChild;
+                if (IORegistryEntryGetChildIterator(service, kIOServicePlane, &itChild) == KERN_SUCCESS){
+                    while ((child = IOIteratorNext(itChild))){
+                        codecID = [[pciDevice grabNumber:CFSTR("IOHDACodecVendorID") forService:child] longValue] & 0xFFFFFFFF;
+                        //revision = [[pciDevice grabNumber:CFSTR("IOHDACodecRevisionID") forService:child] longValue] & 0xFFFF;
+                        subVendor = audio.subVendor.intValue;
+                        subDevice = audio.subDevice.intValue;
+						fprintf(stderr, "CodecID: 0x%lx\n", codecID);
+                        fprintf(stderr, "subVendor: 0x%x\n", subVendor);
+                        fprintf(stderr, "subDevice: 0x%x\n", subDevice);
+                        IOObjectRelease(child);
+                    }
+                    IOObjectRelease(itChild);
+                }
+                IOObjectRelease(parent);
+                IOObjectRelease(service);
+                break;
+            }
+            IOObjectRelease(parent);
+            IOObjectRelease(service);
+        }
+        IOObjectRelease(itThis);
+    }
+}
+
 //
 // Main
 //
 
 int main()
 {
+	// Get audio device info, exit if no alc255/alc256 found
+    getAudioID();
+	long codecIDArr[2] = {0x10ec0256, 0x10ec0255};
+    if (indexOf(codecIDArr, 2, codecID) == -1 || ! subVendor || !subDevice)
+    {
+        fprintf(stderr, "No compatible audio device found! Exit now.\n");
+        return -1;
+    }
     fprintf(stderr, "Starting jack watcher.\n");
     
     // Set up error handler
@@ -722,7 +804,8 @@ int main()
     }
     
 	//alc256 init
-	alc256Init();
+	alcInit();
+	//start a new thread that waits for wakeup event
 	pthread_t watcher_id;
 	if (pthread_create(&watcher_id,NULL,(void*)watcher,NULL))
 	{

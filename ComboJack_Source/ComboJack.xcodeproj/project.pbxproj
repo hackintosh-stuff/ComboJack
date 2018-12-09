@@ -7,11 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CB3D2DA81F0DFEDE00CF6EBA /* hda-verb.c in Sources */ = {isa = PBXBuildFile; fileRef = CB3D2DA71F0DFEDE00CF6EBA /* hda-verb.c */; };
+		3D086A6C21BD498700FFD44C /* PCI.m in Sources */ = {isa = PBXBuildFile; fileRef = 3D086A6A21BD498700FFD44C /* PCI.m */; };
+		CB3D2DA81F0DFEDE00CF6EBA /* hda-verb.m in Sources */ = {isa = PBXBuildFile; fileRef = CB3D2DA71F0DFEDE00CF6EBA /* hda-verb.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CB3D2DA71F0DFEDE00CF6EBA /* hda-verb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "hda-verb.c"; sourceTree = "<group>"; };
+		3D086A6A21BD498700FFD44C /* PCI.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PCI.m; sourceTree = "<group>"; };
+		3D086A6B21BD498700FFD44C /* PCI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PCI.h; sourceTree = "<group>"; };
+		3D2BE1A921BD50C300FA7A55 /* Tables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tables.h; sourceTree = "<group>"; };
+		CB3D2DA71F0DFEDE00CF6EBA /* hda-verb.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "hda-verb.m"; sourceTree = "<group>"; };
 		CB3D58431F0A7DE000F741BA /* ComboJack */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ComboJack; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB3D58641F0A835500F741BA /* hda_hwdep.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hda_hwdep.h; sourceTree = "<group>"; };
 		CB3D58671F0B219000F741BA /* rt298.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rt298.h; sourceTree = "<group>"; };
@@ -47,7 +51,10 @@
 		CB3D58451F0A7DE000F741BA /* ComboJack */ = {
 			isa = PBXGroup;
 			children = (
-				CB3D2DA71F0DFEDE00CF6EBA /* hda-verb.c */,
+				3D2BE1A921BD50C300FA7A55 /* Tables.h */,
+				3D086A6B21BD498700FFD44C /* PCI.h */,
+				3D086A6A21BD498700FFD44C /* PCI.m */,
+				CB3D2DA71F0DFEDE00CF6EBA /* hda-verb.m */,
 				CB3D58671F0B219000F741BA /* rt298.h */,
 				CB3D58641F0A835500F741BA /* hda_hwdep.h */,
 			);
@@ -132,7 +139,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CB3D2DA81F0DFEDE00CF6EBA /* hda-verb.c in Sources */,
+				3D086A6C21BD498700FFD44C /* PCI.m in Sources */,
+				CB3D2DA81F0DFEDE00CF6EBA /* hda-verb.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
