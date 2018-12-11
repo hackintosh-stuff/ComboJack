@@ -131,7 +131,7 @@ typedef uint64_t u64;
 //
 // Global Variables
 //
-
+CFURLRef iconUrl = NULL;
 io_service_t VerbStubIOService;
 io_connect_t DataConnection;
 uint32_t connectiontype = 0;
@@ -614,7 +614,7 @@ uint32_t CFPopUpMenu()
 		CFUserNotificationDisplayAlert(
         	0, // CFTimeInterval timeout
         	kCFUserNotificationNoteAlertLevel, // CFOptionFlags flags
-        	NULL, // CFURLRef iconURL (file location URL)
+        	iconUrl, // CFURLRef iconURL (file location URL)
         	NULL, // CFURLRef soundURL (unused)
         	NULL, // CFURLRef localizationURL
         	CFSTR("Combo Jack Notification"), // CFStringRef alertHeader
@@ -692,7 +692,6 @@ void sigHandler(int signo)
 void alcInit()
 {
 	fprintf(stderr, "Init alc256.\n");
-	
 	if (codecID == 0x10ec0256)
 	{
     	if (indexOf(xps13SubDev, 3, subDevice) != -1 && subVendor == 0x1028)
@@ -825,7 +824,9 @@ int main()
         return -1;
     }
     fprintf(stderr, "Starting jack watcher.\n");
-    
+	
+	iconUrl = CFURLCreateWithString(NULL, CFSTR("file:///System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/SoundPref.icns"), NULL);
+	   
     // Set up error handler
     signal(SIGHUP, sigHandler);
     signal(SIGTERM, sigHandler);
