@@ -387,9 +387,10 @@ static uint32_t linein()
     {
         case 0x10ec0255:
         case 0x10ec0256:
-			VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0)); // Disable headphone output
-			WRITE_COEFEX(0x57, 0x03, 0x8aa6);
-			WRITE_COEF(0x06, 0x6100);
+			return headphones(); //line-in does not work
+			//VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0)); // Disable headphone output
+			//WRITE_COEFEX(0x57, 0x03, 0x8aa6);
+			//WRITE_COEF(0x06, 0x6100);
             break;
         case 0x10ec0298:
 	    	UPDATE_COEF(0x4f, 0x000c, 0x0);
