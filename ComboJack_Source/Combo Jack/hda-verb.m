@@ -147,7 +147,7 @@ struct stat consoleinfo;
 long codecID = 0;
 uint32_t subVendor = 0;
 uint32_t subDevice = 0;
-long codecIDArr[2] = {0x10ec0256, 0x10ec0255};
+long codecIDArr[2] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
 int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 
 //
@@ -312,22 +312,7 @@ static uint32_t UPDATE_COEFEX(uint32_t nid, uint32_t index, uint32_t mask, uint3
 static uint32_t unplugged()
 {
     fprintf(stderr, "Jack Status: unplugged.\n");
-	/*
-	//alc288
-    UPDATE_COEF(0x4f, 0xfcc0, 0xc400);
-    UPDATE_COEF(0x50, 0x2000, 0x2000);
-    UPDATE_COEF(0x56, 0x0006, 0x0006);
-    UPDATE_COEF(0x66, 0x0008, 0);
-    UPDATE_COEF(0x67, 0x2000, 0);
 	
-    VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x05)); // Mac: Need to manually switch the selector back to internal microphone
-*/
-	
-	//unplugged
-	//WRITE_COEFEX(0x57, 0x03, 0x8aa6);
-	//WRITE_COEF(0x06, 0x6100);
-	
-
     switch (codecID)
     {
         case 0x10ec0255:
@@ -342,6 +327,15 @@ static uint32_t unplugged()
 			WRITE_COEFEX(0x57, 0x03, 0x8aa6); /* Direct Drive HP Amp control */
 			//WRITE_COEF(0x46, 0xd089);
             break;
+		case 0x10ec0298:
+    		UPDATE_COEF(0x4f, 0xfcc0, 0xc400);
+    		UPDATE_COEF(0x50, 0x2000, 0x2000);
+    		UPDATE_COEF(0x56, 0x0006, 0x0006);
+    		UPDATE_COEF(0x66, 0x0008, 0);
+    		UPDATE_COEF(0x67, 0x2000, 0);
+			// Mac: Need to manually switch the selector back to internal microphone
+			VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x05)); 
+			break;
         default:
             break;
     }
@@ -355,15 +349,6 @@ static uint32_t unplugged()
 static uint32_t headphones()
 {
     fprintf(stderr, "Jack Status: headphones plugged in.\n");
-	/*
-	//alc288
-    UPDATE_COEF(0x4f, 0xfcc0, 0xc400); // Set to TRS type 
-    VerbCommand(HDA_VERB(0x18, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x20)); // 0x20 corresponds to IN (0x20) + HiZ (0x00) -- Note: HiZ means "High Impedance"
-    UPDATE_COEF(0x50, 0x2000, 0x2000);
-    UPDATE_COEF(0x56, 0x0006, 0x0006);
-    UPDATE_COEF(0x66, 0x0008, 0);
-    UPDATE_COEF(0x67, 0x2000, 0);
-    */
     switch (codecID)
     {
         case 0x10ec0255:
@@ -375,6 +360,14 @@ static uint32_t headphones()
 			WRITE_COEFEX(0x57, 0x03, 0x8ea6);
 			WRITE_COEF(0x49, 0x0049);
             break;
+		case 0x10ec0298:
+	    	UPDATE_COEF(0x4f, 0xfcc0, 0xc400); // Set to TRS type 
+	    	VerbCommand(HDA_VERB(0x18, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x20)); // 0x20 corresponds to IN (0x20) + HiZ (0x00) -- Note: HiZ means "High Impedance"
+	    	UPDATE_COEF(0x50, 0x2000, 0x2000);
+	    	UPDATE_COEF(0x56, 0x0006, 0x0006);
+	    	UPDATE_COEF(0x66, 0x0008, 0);
+	    	UPDATE_COEF(0x67, 0x2000, 0);
+			break;
         default:
             break;
     }
@@ -384,40 +377,49 @@ static uint32_t headphones()
 //
 // Line-In Settings
 //
-/*
+
 static uint32_t linein()
 {
     fprintf(stderr, "Jack Status: line-in device plugged in.\n");
-	
-	//alc288 alc_headset_mode_mic_in
-	//
-    UPDATE_COEF(0x4f, 0x000c, 0x0);
-    //set 0x21 pin_w 0 here
-    VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0)); // Disable headphone output
-    UPDATE_COEF(0x50, 0x2000, 0);
-    UPDATE_COEF(0x56, 0x0006, 0);
-    UPDATE_COEF(0x4f, 0xfcc0, 0xc400); //Set to TRS type 
-    UPDATE_COEF(0x66, 0x0008, 0x0008);
-    UPDATE_COEF(0x67, 0x2000, 0x2000);
-	//
-	
-	//alc256
-	VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0)); // Disable headphone output
-	WRITE_COEFEX(0x57, 0x03, 0x8aa6);
-	WRITE_COEF(0x06, 0x6100);
-	
+
+	//alc_headset_mode_mic_in
+    switch (codecID)
+    {
+        case 0x10ec0255:
+        case 0x10ec0256:
+			VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0)); // Disable headphone output
+			WRITE_COEFEX(0x57, 0x03, 0x8aa6);
+			WRITE_COEF(0x06, 0x6100);
+            break;
+        case 0x10ec0298:
+	    	UPDATE_COEF(0x4f, 0x000c, 0x0);
+	    	//set 0x21 pin_w 0 here
+	    	VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0)); // Disable headphone output
+	    	UPDATE_COEF(0x50, 0x2000, 0);
+	    	UPDATE_COEF(0x56, 0x0006, 0);
+	    	UPDATE_COEF(0x4f, 0xfcc0, 0xc400); //Set to TRS type 
+	    	UPDATE_COEF(0x66, 0x0008, 0x0008);
+	    	UPDATE_COEF(0x67, 0x2000, 0x2000);
+            break;
+        default:
+            break;
+    }
 	
     //set 0x1a pin_w 0x21 here
-    VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x21)); // 0x21 corresponds to IN (0x20) + VREF 50 (0x01)
-    if (VerbCommand(HDA_VERB(0x1a, AC_VERB_GET_POWER_STATE, 0x00)) != 0) // Mac: Check power state of node 0x1a since it's frequently in D3
+	// 0x21 corresponds to IN (0x20) + VREF 50 (0x01)
+    VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x21)); 
+	// Mac: Check power state of node 0x1a since it's frequently in D3
+    if (VerbCommand(HDA_VERB(0x1a, AC_VERB_GET_POWER_STATE, 0x00)) != 0) 
     {
-        VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_POWER_STATE, 0x00)); // Mac: Power on node 0x1a if in D3
+		// Mac: Power on node 0x1a if in D3
+        VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_POWER_STATE, 0x00)); 
     }
-    VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x02)); // Mac: Need to manually switch the selector to line-in node
+	// Mac: Need to manually switch the selector to line-in node
+    VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x02)); 
     
     return 0; // Success
 }
-*/
+
 
 //
 // Headset: CTIA (iPhone-style plug)
@@ -426,16 +428,8 @@ static uint32_t linein()
 static uint32_t headsetCTIA()
 {
     fprintf(stderr, "Jack Status: headset (CTIA/iPhone) plugged in.\n");
-	/*
-	//alc288 alc_headset_mode_ctia
-    UPDATE_COEF(0x8e, 0x0070, 0x0020); // Headset output enable 
-    UPDATE_COEF(0x4f, 0xfcc0, 0xd400);
-    usleep(300000); //unit = microseconds; Note: msleep is in kernel only
-    UPDATE_COEF(0x50, 0x2000, 0x2000);
-    UPDATE_COEF(0x56, 0x0006, 0x0006);
-    UPDATE_COEF(0x66, 0x0008, 0);
-    UPDATE_COEF(0x67, 0x2000, 0);
-	*/
+	
+	//alc_headset_mode_ctia
     switch (codecID)
     {
         case 0x10ec0255:
@@ -448,11 +442,20 @@ static uint32_t headsetCTIA()
 			WRITE_COEF(0x1b, 0x0c6b);
 			WRITE_COEFEX(0x57, 0x03, 0x8ea6);
             break;
+		case 0x10ec0298:
+			UPDATE_COEF(0x8e, 0x0070, 0x0020); // Headset output enable 
+			UPDATE_COEF(0x4f, 0xfcc0, 0xd400);
+			usleep(300000);
+			UPDATE_COEF(0x50, 0x2000, 0x2000);
+    		UPDATE_COEF(0x56, 0x0006, 0x0006);
+    		UPDATE_COEF(0x66, 0x0008, 0);
+    		UPDATE_COEF(0x67, 0x2000, 0);
+			// Mac: Need to manually switch the selector to headset node
+     		VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x00)); 
+			break;
         default:
             break;
     }
-	
-    //VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x00)); // Mac: Need to manually switch the selector to headset node
     
     return 0; // Success
 }
@@ -486,11 +489,20 @@ static uint32_t headsetOMTP()
 			WRITE_COEF(0x1b, 0x0c6b);
 			WRITE_COEFEX(0x57, 0x03, 0x8ea6);
             break;
+		case 0x10ec0298:
+			UPDATE_COEF(0x4f, 0xfcc0, 0xe400);
+		    usleep(300000);
+		    UPDATE_COEF(0x50, 0x2000, 0x2000);
+		    UPDATE_COEF(0x56, 0x0006, 0x0006);
+		    UPDATE_COEF(0x66, 0x0008, 0);
+		    UPDATE_COEF(0x67, 0x2000, 0);
+			// Mac: Need to manually switch the selector to headset node
+     		VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x00)); 
+			break;
         default:
             break;
     }
-    //VerbCommand(HDA_VERB(0x22, AC_VERB_SET_CONNECT_SEL, 0x00)); // Mac: Need to manually switch the selector to headset node
-    
+	
     return 0; // Success
 }
 
@@ -508,40 +520,35 @@ static uint32_t headsetcheck()
 //    bool is_ctia;
     
     fprintf(stderr, "Jack Status: headset plugged in. Checking type...\n");
-	/*
-	//alc288
-    UPDATE_COEF(0x8e, 0x0070, 0x0020); //Headset output enable 
-    VerbCommand(HDA_VERB(0x18, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24)); // 0x24 corresponds to IN (0x20) + VREF 80 (0x04)
-	UPDATE_COEF(0x4f, 0xfcc0, 0xd400); //Check Type 
 	
-    usleep(350000);
-    // Read register 0x50
-    SetCoefIndex.verb = HDA_VERB(nid, AC_VERB_SET_COEF_INDEX, 0x50); // Verb to set the coefficient index desired
-    SetCoefIndex.res = VerbCommand(SetCoefIndex.verb); // Go to index desired
-    
-    GetProcCoef.verb = HDA_VERB(nid, AC_VERB_GET_PROC_COEF, 0x00); // Get Processing Coefficient payload is always 0
-    GetProcCoef.res = VerbCommand(GetProcCoef.verb); // Get data
-    */
-	
-
-	//alc256
-	VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24)); // 0x24 corresponds to IN (0x20) + VREF 80 (0x04)
     switch (codecID)
     {
         case 0x10ec0255:
         case 0x10ec0256:
+			VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24)); // 0x24 corresponds to IN (0x20) + VREF 80 (0x04)
 			WRITE_COEF(0x45, 0xd089);
 			WRITE_COEF(0x49, 0x0149);
+			usleep(350000);
+			// Read register 0x46
+			SetCoefIndex.verb = HDA_VERB(nid, AC_VERB_SET_COEF_INDEX, 0x46); 
+			SetCoefIndex.res = VerbCommand(SetCoefIndex.verb); 
+			GetProcCoef.verb = HDA_VERB(nid, AC_VERB_GET_PROC_COEF, 0x46);
+			GetProcCoef.res = VerbCommand(GetProcCoef.verb);
             break;
+		case 0x10ec0298:
+	    	UPDATE_COEF(0x8e, 0x0070, 0x0020); //Headset output enable 
+	    	VerbCommand(HDA_VERB(0x18, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24)); // 0x24 corresponds to IN (0x20) + VREF 80 (0x04)
+			UPDATE_COEF(0x4f, 0xfcc0, 0xd400); //Check Type
+    		usleep(350000);
+    		// Read register 0x50
+    		SetCoefIndex.verb = HDA_VERB(nid, AC_VERB_SET_COEF_INDEX, 0x50); // Verb to set the coefficient index desired
+    		SetCoefIndex.res = VerbCommand(SetCoefIndex.verb); // Go to index desired
+    		GetProcCoef.verb = HDA_VERB(nid, AC_VERB_GET_PROC_COEF, 0x00); // Get Processing Coefficient payload is always 0
+    		GetProcCoef.res = VerbCommand(GetProcCoef.verb); // Get data 
+			break;
         default:
             break;
     }
-	usleep(350000);
-    // Read register 0x46
-    SetCoefIndex.verb = HDA_VERB(nid, AC_VERB_SET_COEF_INDEX, 0x46); 
-    SetCoefIndex.res = VerbCommand(SetCoefIndex.verb); 
-	GetProcCoef.verb = HDA_VERB(nid, AC_VERB_GET_PROC_COEF, 0x46);
-	GetProcCoef.res = VerbCommand(GetProcCoef.verb);
 	
     // Check if register 0x50 reports a CTIA- or OMTP-style headset
 	fprintf(stderr, "Headset check: 0x%x, 0x%x\n", GetProcCoef.res, GetProcCoef.res & 0x0070);
@@ -620,8 +627,8 @@ uint32_t CFPopUpMenu()
         	CFSTR("Combo Jack Notification"), // CFStringRef alertHeader
         	CFSTR("What did you just plug in? (Press ESC to cancel)"), // CFStringRef alertMessage
         	CFSTR("Headphones"), // CFStringRef defaultButtonTitle
-        	//CFSTR("Line-In"), // CFStringRef alternateButtonTitle
-        	CFSTR("Cancel"), // CFStringRef alternateButtonTitle
+        	CFSTR("Line-In"), // CFStringRef alternateButtonTitle
+        	//CFSTR("Cancel"), // CFStringRef alternateButtonTitle
         	CFSTR("Headset"), // CFStringRef otherButtonTitle
         	&responsecode // CFOptionFlags *responseFlags
      	);
@@ -645,11 +652,11 @@ uint32_t CFPopUpMenu()
             status = headphones();
             break;
         case kCFUserNotificationAlternateResponse:
-            //fprintf(stderr, "Line-In selected.\n"); // %lu\n", kCFUserNotificationAlternateResponse);
-            //status = linein();
+			fprintf(stderr, "Line-In selected.\n"); // %lu\n", kCFUserNotificationAlternateResponse);
+			status = linein();
 			//Cancel
-            fprintf(stderr, "Cancelled.\n");
-			status = 0; // Maintain current state
+            //fprintf(stderr, "Cancelled.\n");
+			//status = 0; // Maintain current state
             break;
         case kCFUserNotificationOtherResponse:
             fprintf(stderr, "Headset selected.\n"); // %lu\n", kCFUserNotificationOtherResponse);
@@ -691,11 +698,12 @@ void sigHandler(int signo)
 //Codec fixup, invoked when boot/wake
 void alcInit()
 {
-	fprintf(stderr, "Init alc256.\n");
-	if (codecID == 0x10ec0256)
-	{
-    	if (indexOf(xps13SubDev, 3, subDevice) != -1 && subVendor == 0x1028)
-    	{
+	fprintf(stderr, "Init codec.\n");
+    switch (codecID)
+    {
+        case 0x10ec0256:
+			if (indexOf(xps13SubDev, 3, subDevice) == -1 || subVendor != 0x1028)
+				goto ALC255_COMMON;
 			fprintf(stderr, "Fix XPS 13.\n");
         	VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x25));
         	VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
@@ -708,16 +716,21 @@ void alcInit()
         	WRITE_COEF(0x1b, 0x084b);
         	WRITE_COEF(0x46, 0x0004);
         	WRITE_COEF(0x1b, 0x0c4b);
-    	}
-    	else
-    	{
-        	VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24));
-        	VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x20));
-        	VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
-    	}
-    	//VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+            break;
+        case 0x10ec0255:
+		ALC255_COMMON:
+			VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24));
+			VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x20));
+			VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+            break;
+		case 0x10ec0298:
+			VerbCommand(HDA_VERB(0x18, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x22));
+			VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x23));
+			VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+			break;
+        default:
+            break;
     }
-    
 }
 
 // Sleep/Wake event callback function, calls the fixup function
@@ -740,7 +753,7 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
 					break;
 				usleep(10000);
 			}
-			printf( "Re-init alc256...\n" );
+			printf( "Re-init codec...\n" );
 			alcInit();
 			awake = true;
         	break;
