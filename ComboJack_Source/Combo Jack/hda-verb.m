@@ -152,6 +152,14 @@ uint32_t subDevice = 0;
 long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
 int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 
+//dialog text
+CFStringRef dialogTitle;
+CFStringRef dialogMsg;
+CFStringRef btnHeadphone;
+CFStringRef btnLinein;
+CFStringRef btnHeadset;
+CFStringRef btnCancel;
+
 //
 // Open connection to IOService
 //
@@ -627,17 +635,17 @@ uint32_t CFPopUpMenu()
         	iconUrl, // CFURLRef iconURL (file location URL)
         	NULL, // CFURLRef soundURL (unused)
         	NULL, // CFURLRef localizationURL
-        	CFSTR("Combo Jack Notification"), // CFStringRef alertHeader
-        	CFSTR("What did you just plug in? (Press ESC to cancel)"), // CFStringRef alertMessage
-        	CFSTR("Headphones"), // CFStringRef defaultButtonTitle
-        	CFSTR("Line-In"), // CFStringRef alternateButtonTitle
-        	//CFSTR("Cancel"), // CFStringRef alternateButtonTitle
-        	CFSTR("Headset"), // CFStringRef otherButtonTitle
+        	dialogTitle, // CFStringRef alertHeader
+        	dialogMsg, // CFStringRef alertMessage
+        	btnHeadphone, // CFStringRef defaultButtonTitle
+        	btnLinein, // CFStringRef alternateButtonTitle
+        	//btnCancel, // CFStringRef alternateButtonTitle
+        	btnHeadset, // CFStringRef otherButtonTitle
         	&responsecode // CFOptionFlags *responseFlags
      	);
 		break;
 	}
-    
+	
 	if ((GETJACKSTATUS() & 0x80000000) != 0x80000000)
 	{
 		return unplugged();
@@ -828,7 +836,7 @@ int main()
     fprintf(stderr, "Starting jack watcher.\n");
 	
 	iconUrl = CFURLCreateWithString(NULL, CFSTR("file:///usr/local/share/ComboJack/Headphone.icns"), NULL);
-	if (!CFURLResourceIsReachable(iconUrl, NULL))            
+	if (!CFURLResourceIsReachable(iconUrl, NULL))
 		iconUrl = NULL;
 	   
     // Set up error handler
@@ -884,6 +892,14 @@ int main()
 		fprintf(stderr, "create pthread error!\n");
 		return -1;
 	}
+	
+	//set up texts
+	dialogTitle = CFStringCreateWithCString(NULL, "Combo Jack Notification", kCFStringEncodingUTF8);
+	dialogMsg = CFStringCreateWithCString(NULL, "What did you just plug in? (Press ESC to cancel)", kCFStringEncodingUTF8);
+	btnHeadphone = CFStringCreateWithCString(NULL, "Headphones", kCFStringEncodingUTF8);
+	btnLinein = CFStringCreateWithCString(NULL, "Line-In", kCFStringEncodingUTF8);
+	btnHeadset = CFStringCreateWithCString(NULL, "Headset", kCFStringEncodingUTF8);
+	btnCancel = CFStringCreateWithCString(NULL, "Cancel", kCFStringEncodingUTF8);
 	
     // Set up jack monitor verb command
     //nid = REALTEK_HP_OUT;
