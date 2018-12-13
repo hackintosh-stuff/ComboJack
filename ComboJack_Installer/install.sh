@@ -10,6 +10,7 @@ sudo rm /Library/LaunchAgents/good.win.ALCPlugFix
 sudo rm /Library/LaunchDaemons/good.win.ALCPlugFix
 sudo rm /usr/local/sbin/hda-verb
 sudo rm /usr/local/share/ComboJack/Headphone.icns
+sudo rm /usr/local/share/ComboJack/l10n.json
 
 # install 
 sudo cp ComboJack /usr/local/sbin
@@ -18,11 +19,13 @@ sudo chown root:wheel /usr/local/sbin/ComboJack
 sudo cp hda-verb /usr/local/sbin
 #sudo chmod 755 /usr/local/sbin/hda-verb
 #sudo chown root:wheel /usr/local/sbin/hda-verb
-sudo cp com.XPS.ComboJack.plist /Library/LaunchDaemons/
-sudo chmod 644 /Library/LaunchDaemons/com.XPS.ComboJack.plist
 sudo mkdir -p /usr/local/share/ComboJack/
 sudo cp Headphone.icns /usr/local/share/ComboJack/
 sudo chmod 644 /usr/local/share/ComboJack/Headphone.icns
+sudo cp l10n.json /usr/local/share/ComboJack/
+sudo chmod 644 /usr/local/share/ComboJack/l10n.json
+sudo cp com.XPS.ComboJack.plist /Library/LaunchDaemons/
+sudo chmod 644 /Library/LaunchDaemons/com.XPS.ComboJack.plist
 sudo chown root:wheel /Library/LaunchDaemons/com.XPS.ComboJack.plist
 sudo launchctl load /Library/LaunchDaemons/com.XPS.ComboJack.plist
 echo
