@@ -130,7 +130,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd \"${TARGET_BUILD_DIR}\"\ncp -f ComboJack ../../../ComboJack_Installer/\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n#cd \"${TARGET_BUILD_DIR}\"\n#cp -f ComboJack ../../../ComboJack_Installer/\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

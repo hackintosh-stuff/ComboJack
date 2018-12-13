@@ -122,11 +122,11 @@ typedef uint64_t u64;
 #define AC_PAR_AMP_OUT_CAP		0x12
 #define AC_PAR_VOL_KNB_CAP		0x13
 
-
-//REALTEK_VENDOR_REGISTERS = 0x20
 #define WRITE_COEFEX(_nid, _idx, _val) UPDATE_COEFEX(_nid, _idx, -1, _val)
-#define WRITE_COEF(_idx, _val) WRITE_COEFEX(0x20, _idx, _val)
-#define UPDATE_COEF(_idx, _mask, _val) UPDATE_COEFEX(0x20, _idx, _mask, _val)
+#define WRITE_COEF(_idx, _val) WRITE_COEFEX(REALTEK_VENDOR_REGISTERS, _idx, _val)
+#define UPDATE_COEF(_idx, _mask, _val) UPDATE_COEFEX(REALTEK_VENDOR_REGISTERS, _idx, _mask, _val)
+
+#define GETJACKSTATUS() VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00))
 
 //
 // Global Variables
@@ -612,7 +612,7 @@ uint32_t CFPopUpMenu()
 		if (!consoleinfo.st_uid)
 		{
 			sleep(1);
-			if ((VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00)) & 0x80000000) != 0x80000000)
+			if ((GETJACKSTATUS() & 0x80000000) != 0x80000000)
 			{
 				return unplugged();
 			}
@@ -635,8 +635,12 @@ uint32_t CFPopUpMenu()
      	);
 		break;
 	}
-    	
-
+    
+	if ((GETJACKSTATUS() & 0x80000000) != 0x80000000)
+	{
+		return unplugged();
+	}
+	
     /* Responses are of this format:
      
      kCFUserNotificationDefaultResponse		= 0,
@@ -750,7 +754,7 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
         case kIOMessageSystemHasPoweredOn:
 			while(run)
 			{
-				if (VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00)) != -1)
+				if (GETJACKSTATUS() != -1)
 					break;
 				usleep(10000);
 			}
@@ -851,8 +855,9 @@ int main()
     // Local variables
     kern_return_t ServiceConnectionStatus;
 	int version;
-	int nid, verb, param;
-	struct hda_verb_ioctl val;
+	//int nid, verb, param;
+	u32 jackstat;
+	//struct hda_verb_ioctl val;
 
     // Mac version of hda-verb
 	version = 0x2710; // Darwin
@@ -886,17 +891,16 @@ int main()
 	}
 	
     // Set up jack monitor verb command
-    nid = REALTEK_HP_OUT;
-    verb = AC_VERB_GET_PIN_SENSE;
-    param = 0x00;
+    //nid = REALTEK_HP_OUT;
+    //verb = AC_VERB_GET_PIN_SENSE;
+    //param = 0x00;
     
-	fprintf(stderr, "nid = 0x%x, verb = 0x%x, param = 0x%x\n",
-		nid, verb, param);
+	//fprintf(stderr, "nid = 0x%x, verb = 0x%x, param = 0x%x\n", nid, verb, param);
 
 //    fprintf(stderr, "TEST Update Coef Command = 0x%x\n", UPDATE_COEF(0x4f, 0xfcc0, 0xd400));
     
     // Properly format jack monitor verb command
-	val.verb = HDA_VERB(nid, verb, param);
+	//val.verb = HDA_VERB(nid, verb, param);
 
     // This  is just a test send
 //    fprintf(stderr, "Verb Command = 0x%x\n", val.verb);
@@ -905,12 +909,12 @@ int main()
 
     while(run) // Poll headphone jack state
     {
-        val.res = VerbCommand(val.verb);
-        if (val.res == -1) // 0xFFFFFFFF means jack not ready yet
+        jackstat = GETJACKSTATUS();
+        if (jackstat == -1) // 0xFFFFFFFF means jack not ready yet
         {
             fprintf(stderr, "Jack not ready. Checking again in 1 second...\n");
         }
-        else if ((val.res & 0x80000000) == 0x80000000)
+        else if ((jackstat & 0x80000000) == 0x80000000)
         {
             {
                 fprintf(stderr, "Jack sense detected! Displaying menu...\n");
