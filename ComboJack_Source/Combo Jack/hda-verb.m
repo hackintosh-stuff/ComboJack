@@ -128,6 +128,8 @@ typedef uint64_t u64;
 
 #define GETJACKSTATUS() VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00))
 
+#define VERBSTUB_SERVICE "com_XPS_VerbStub"
+
 //
 // Global Variables
 //
@@ -147,7 +149,7 @@ struct stat consoleinfo;
 long codecID = 0;
 uint32_t subVendor = 0;
 uint32_t subDevice = 0;
-long codecIDArr[2] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
+long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
 int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 
 //
@@ -169,7 +171,7 @@ uint32_t OpenServiceConnection()
     // accessible file (just look at how simple the hda-verb program in alsa-tools is! All it uses is ioctl).
     //
     
-    CFMutableDictionaryRef dict = IOServiceMatching("com_XPS_VerbStub");
+    CFMutableDictionaryRef dict = IOServiceMatching(VERBSTUB_SERVICE);
     
     // Use IOServiceGetMatchingService since we can reasonably expect "VerbStub" is the only IORegistryEntry of its kind.
     // Otherwise IOServiceGetMatchingServices with an iterating algorithm must be used to find the kernel extension.
@@ -788,43 +790,33 @@ void watcher(void)
 }
 
 
-//Get primary onboard audio device info, adapted from DPCIManager
+//Get onboard audio device info, adapted from DPCIManager
 void getAudioID()
 {
-    io_iterator_t itThis;
-    io_service_t service;
-    io_service_t parent;
-    io_name_t name;
-    if (IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("AppleHDAController"), &itThis) == KERN_SUCCESS){
-        while((service = IOIteratorNext(itThis))) {
-            IORegistryEntryGetParentEntry(service, kIOServicePlane, &parent);
-            IORegistryEntryGetName(parent, name);
-            if (!strcmp(name, "HDEF") || !strcmp(name, "HDAS")){
-                io_service_t child;
-                pciDevice *audio = [pciDevice create:parent];
-                io_iterator_t itChild;
-                if (IORegistryEntryGetChildIterator(service, kIOServicePlane, &itChild) == KERN_SUCCESS){
-                    while ((child = IOIteratorNext(itChild))){
-                        codecID = [[pciDevice grabNumber:CFSTR("IOHDACodecVendorID") forService:child] longValue] & 0xFFFFFFFF;
-                        //revision = [[pciDevice grabNumber:CFSTR("IOHDACodecRevisionID") forService:child] longValue] & 0xFFFF;
-                        subVendor = audio.subVendor.intValue;
-                        subDevice = audio.subDevice.intValue;
-						fprintf(stderr, "CodecID: 0x%lx\n", codecID);
-                        fprintf(stderr, "subVendor: 0x%x\n", subVendor);
-                        fprintf(stderr, "subDevice: 0x%x\n", subDevice);
-                        IOObjectRelease(child);
-                    }
-                    IOObjectRelease(itChild);
-                }
-                IOObjectRelease(parent);
-                IOObjectRelease(service);
-                break;
-            }
-            IOObjectRelease(parent);
-            IOObjectRelease(service);
-        }
-        IOObjectRelease(itThis);
-    }
+	codecID = 0, subVendor = 0, subDevice = 0;
+	io_service_t HDACodecFuncIOService;
+	io_service_t HDACodecDrvIOService;
+	io_service_t HDACodecDevIOService;
+	io_service_t HDACtrlIOService;
+	io_service_t pciDevIOService;
+	IORegistryEntryGetParentEntry(VerbStubIOService, kIOServicePlane, &HDACodecFuncIOService); //IOHDACodecFunction
+	IORegistryEntryGetParentEntry(HDACodecFuncIOService, kIOServicePlane, &HDACodecDrvIOService);  //IOHDACodecDriver
+	IORegistryEntryGetParentEntry(HDACodecDrvIOService, kIOServicePlane, &HDACodecDevIOService); //IOHDACodecDevice
+	IORegistryEntryGetParentEntry(HDACodecDevIOService, kIOServicePlane, &HDACtrlIOService);//AppleHDAController
+	IORegistryEntryGetParentEntry(HDACtrlIOService, kIOServicePlane, &pciDevIOService);//HDEF
+	pciDevice *audio = [pciDevice create:pciDevIOService];
+	codecID = [[pciDevice grabNumber:CFSTR("IOHDACodecVendorID") forService:HDACodecDevIOService] longValue] & 0xFFFFFFFF;
+	subVendor = audio.subVendor.intValue;
+	subDevice = audio.subDevice.intValue;
+	fprintf(stderr, "CodecID: 0x%lx\n", codecID);
+    fprintf(stderr, "subVendor: 0x%x\n", subVendor);
+    fprintf(stderr, "subDevice: 0x%x\n", subDevice);
+	IOObjectRelease(HDACodecFuncIOService);
+	IOObjectRelease(HDACodecDrvIOService);
+	IOObjectRelease(HDACodecDevIOService);
+	IOObjectRelease(HDACtrlIOService);
+	IOObjectRelease(pciDevIOService);
+	//[audio release];
 }
 
 //
@@ -833,18 +825,10 @@ void getAudioID()
 
 int main()
 {
-	// Get audio device info, exit if no alc255/alc256 found
-    getAudioID();
-	//long codecIDArr[2] = {0x10ec0256, 0x10ec0255};
-    if (indexOf_L(codecIDArr, 2, codecID) == -1 || ! subVendor || !subDevice)
-    {
-        fprintf(stderr, "No compatible audio device found! Exit now.\n");
-        return -1;
-    }
     fprintf(stderr, "Starting jack watcher.\n");
 	
 	iconUrl = CFURLCreateWithString(NULL, CFSTR("file:///usr/local/share/ComboJack/Headphone.icns"), NULL);
-	if (!CFURLResourceIsReachable(iconUrl, NULL))
+	if (!CFURLResourceIsReachable(iconUrl, NULL))            
 		iconUrl = NULL;
 	   
     // Set up error handler
@@ -881,7 +865,16 @@ int main()
             ServiceConnectionStatus = OpenServiceConnection();
         }
     }
-    
+
+	// Get audio device info, exit if no alc255/alc256 found
+    getAudioID();
+	//long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
+    if (indexOf_L(codecIDArr, 3, codecID) == -1 || ! subVendor || !subDevice)
+    {
+        fprintf(stderr, "No compatible audio device found! Exit now.\n");
+        return -1;
+    }
+	
 	//alc256 init
 	alcInit();
 	//start a new thread that waits for wakeup event
