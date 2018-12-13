@@ -843,7 +843,9 @@ int main()
     }
     fprintf(stderr, "Starting jack watcher.\n");
 	
-	iconUrl = CFURLCreateWithString(NULL, CFSTR("file:///System/Library/PreferencePanes/Sound.prefPane/Contents/Resources/SoundPref.icns"), NULL);
+	iconUrl = CFURLCreateWithString(NULL, CFSTR("file:///usr/local/share/ComboJack/Headphone.icns"), NULL);
+	if (!CFURLResourceIsReachable(iconUrl, NULL))
+		iconUrl = NULL;
 	   
     // Set up error handler
     signal(SIGHUP, sigHandler);
