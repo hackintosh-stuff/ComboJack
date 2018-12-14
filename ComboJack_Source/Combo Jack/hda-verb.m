@@ -29,6 +29,7 @@
 #include <mach/mach_interface.h>
 #include <mach/mach_init.h>
 #include <sys/stat.h>
+#include <semaphore.h>
 #include <IOKit/IOMessage.h>
 #include <IOKit/pwr_mgt/IOPMLib.h>
 
@@ -758,7 +759,7 @@ void alcInit()
 }
 
 // Sleep/Wake event callback function, calls the fixup function
-void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument )
+void SleepWakeCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument )
 {
     switch ( messageType )
     {
@@ -791,7 +792,7 @@ void watcher(void)
 {
     IONotificationPortRef  notifyPortRef;
     void*                  refCon;
-    root_port = IORegisterForSystemPower( refCon, &notifyPortRef, MySleepCallBack, &notifierObject );
+    root_port = IORegisterForSystemPower( refCon, &notifyPortRef, SleepWakeCallBack, &notifierObject );
     if ( root_port == 0 )
     {
         printf("IORegisterForSystemPower failed\n");
@@ -843,7 +844,12 @@ void getAudioID()
 int main()
 {
     fprintf(stderr, "Starting jack watcher.\n");
-       
+    //Allow only one instance
+	if (sem_open("XPS_ComboJack_Watcher", O_CREAT, 600, 1) == SEM_FAILED) 
+	{
+		fprintf(stderr, "Another instance is already running!\n");
+		return 1;
+	}
     // Set up error handler
     signal(SIGHUP, sigHandler);
     signal(SIGTERM, sigHandler);
@@ -879,13 +885,13 @@ int main()
         }
     }
 
-    // Get audio device info, exit if no alc255/alc256 found
+    // Get audio device info, exit if no compatible device found
     getAudioID();
     //long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
     if (indexOf_L(codecIDArr, 3, codecID) == -1 || ! subVendor || !subDevice)
     {
         fprintf(stderr, "No compatible audio device found! Exit now.\n");
-        return -1;
+        return 1;
     }
     
     //alc256 init
@@ -895,7 +901,7 @@ int main()
     if (pthread_create(&watcher_id,NULL,(void*)watcher,NULL))
     {
         fprintf(stderr, "create pthread error!\n");
-        return -1;
+        return 1;
     }
     
     //load ui resources
