@@ -126,8 +126,8 @@ typedef uint64_t u64;
 #define UPDATE_COEF(_idx, _mask, _val) UPDATE_COEFEX(REALTEK_VENDOR_REGISTERS, _idx, _mask, _val)
 
 #define GETJACKSTATUS() VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00))
-
 #define VERBSTUB_SERVICE "com_XPS_VerbStub"
+#define GET_CFSTR_FROM_DICT(_dict, _key) (__bridge CFStringRef)[_dict objectForKey:_key]
 
 //
 // Global Variables
@@ -152,7 +152,8 @@ long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
 int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 
 //dialog text
-NSData *l10nData = NULL;
+NSDictionary *l10nDict = nil;
+NSDictionary *dlgText;
 CFStringRef dialogTitle;
 CFStringRef dialogMsg;
 CFStringRef btnHeadphone;
@@ -609,16 +610,32 @@ void JackBehavior()
 // Pop-up menu
 //
 
+inline signed int displayDlg(CFURLRef iconUrl, NSDictionary* textDict, CFOptionFlags* responsecode)
+{
+	return CFUserNotificationDisplayAlert(
+        0, // CFTimeInterval timeout
+        kCFUserNotificationNoteAlertLevel, // CFOptionFlags flags
+        iconUrl, // CFURLRef iconURL (file location URL)
+        NULL, // CFURLRef soundURL (unused)
+        NULL, // CFURLRef localizationURL
+		GET_CFSTR_FROM_DICT(textDict, @"dialogTitle"),
+		GET_CFSTR_FROM_DICT(textDict, @"dialogMsg"),
+		GET_CFSTR_FROM_DICT(textDict, @"btnHeadphone"),
+		GET_CFSTR_FROM_DICT(textDict, @"btnLinein"),
+		//GET_CFSTR_FROM_DICT(textDict, @"btnCancel"),
+		GET_CFSTR_FROM_DICT(textDict, @"btnHeadset"),
+        responsecode // CFOptionFlags *responseFlags
+    );
+}
+
 uint32_t CFPopUpMenu()
 {
     CFOptionFlags responsecode;
     uint32_t status;
-    bool fallback = false;
-    
-    //Note or Plain?
+	
     while(true)
     {
-        //struct stat info;
+		//wait until user logged in
         stat("/dev/console", &consoleinfo);
         if (!consoleinfo.st_uid)
         {
@@ -630,61 +647,14 @@ uint32_t CFPopUpMenu()
             return unplugged();
         }
         if (awake) awake = false;
-        //set up texts
+		//get current locale settings
         NSString *locale = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleLocale"];
-        //fprintf(stderr, "locale: %s\n", [locale UTF8String]);
-        //NSData *l10nData = [NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"];
-        if(NSClassFromString(@"NSJSONSerialization"))
-        {
-            NSError *error = nil;
-            id l10nObj = [NSJSONSerialization JSONObjectWithData:l10nData options:0 error:&error];
-            if(error) fallback = true;
-            else
-            {
-                if([l10nObj isKindOfClass:[NSDictionary class]])
-                {
-                    NSDictionary *l10nDict = l10nObj;
-                    NSDictionary* CurDict = [l10nDict objectForKey:locale];
-                    if (!CurDict) fallback = true;
-                    else
-                    {
-                        //NSLog(@"Dictionary: %@", [CurDict description]);
-                        dialogTitle = (__bridge CFStringRef)[CurDict objectForKey:@"dialogTitle"];
-                        dialogMsg = (__bridge CFStringRef)[CurDict objectForKey:@"dialogMsg"];
-                        btnHeadphone = (__bridge CFStringRef)[CurDict objectForKey:@"btnHeadphone"];
-                        btnLinein = (__bridge CFStringRef)[CurDict objectForKey:@"btnLinein"];
-                        btnHeadset = (__bridge CFStringRef)[CurDict objectForKey:@"btnHeadset"];
-                        btnCancel = (__bridge CFStringRef)[CurDict objectForKey:@"btnCancel"];
-                    }
-                }
-                else fallback = true;
-            }
-        }
-        else fallback = true;
-        if (fallback)
-        {
-            dialogTitle = CFStringCreateWithCString(NULL, "Combo Jack Notification", kCFStringEncodingUTF8);
-            dialogMsg = CFStringCreateWithCString(NULL, "What did you just plug in? (Press ESC to cancel)", kCFStringEncodingUTF8);
-            btnHeadphone = CFStringCreateWithCString(NULL, "Headphones", kCFStringEncodingUTF8);
-            btnLinein = CFStringCreateWithCString(NULL, "Line-In", kCFStringEncodingUTF8);
-            btnHeadset = CFStringCreateWithCString(NULL, "Headset", kCFStringEncodingUTF8);
-            btnCancel = CFStringCreateWithCString(NULL, "Cancel", kCFStringEncodingUTF8);
-        }
-        CFUserNotificationDisplayAlert(
-            0, // CFTimeInterval timeout
-            kCFUserNotificationNoteAlertLevel, // CFOptionFlags flags
-            iconUrl, // CFURLRef iconURL (file location URL)
-            NULL, // CFURLRef soundURL (unused)
-            NULL, // CFURLRef localizationURL
-            dialogTitle, // CFStringRef alertHeader
-            dialogMsg, // CFStringRef alertMessage
-            btnHeadphone, // CFStringRef defaultButtonTitle
-            btnLinein, // CFStringRef alternateButtonTitle
-            //btnCancel, // CFStringRef alternateButtonTitle
-            btnHeadset, // CFStringRef otherButtonTitle
-            &responsecode // CFOptionFlags *responseFlags
-        );
-        break;
+        //load localized strings
+		NSDictionary* CurDict = [l10nDict objectForKey:locale];
+		NSMutableDictionary *merged = dlgText.mutableCopy;
+		[merged addEntriesFromDictionary: CurDict];
+		displayDlg(iconUrl, (NSDictionary *)merged, &responsecode);
+		break;
     }
     
     if ((GETJACKSTATUS() & 0x80000000) != 0x80000000)
@@ -932,7 +902,24 @@ int main()
     iconUrl = CFURLCreateWithString(NULL, CFSTR("file:///usr/local/share/ComboJack/Headphone.icns"), NULL);
     if (!CFURLResourceIsReachable(iconUrl, NULL))
         iconUrl = NULL;
-    l10nData = [NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"];
+    //NSData *l10nData = [NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"];
+    if(NSClassFromString(@"NSJSONSerialization"))
+    {
+        NSError *error = nil;
+        id l10nObj = [NSJSONSerialization 
+			JSONObjectWithData:[NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"]
+			options:0 error:&error];
+        if(!error && [l10nObj isKindOfClass:[NSDictionary class]])
+            l10nDict = l10nObj;
+	}
+	dlgText = [[NSDictionary alloc] initWithObjectsAndKeys:
+        @"Combo Jack Notification", @"dialogTitle",
+        @"What did you just plug in? (Press ESC to cancel)", @"dialogMsg",
+        @"Headphones", @"btnHeadphone",
+        @"Line-In", @"btnLinein",
+        @"Headset", @"btnHeadset",
+        @"Cancel", @"btnCancel",
+        nil];
     
     // Set up jack monitor verb command
     //nid = REALTEK_HP_OUT;
