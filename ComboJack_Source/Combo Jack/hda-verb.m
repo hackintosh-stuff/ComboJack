@@ -611,32 +611,13 @@ void JackBehavior()
 // Pop-up menu
 //
 
-inline signed int displayDlg(CFURLRef iconUrl, NSDictionary* textDict, CFOptionFlags* responsecode)
-{
-	return CFUserNotificationDisplayAlert(
-        0, // CFTimeInterval timeout
-        kCFUserNotificationNoteAlertLevel, // CFOptionFlags flags
-        iconUrl, // CFURLRef iconURL (file location URL)
-        NULL, // CFURLRef soundURL (unused)
-        NULL, // CFURLRef localizationURL
-		GET_CFSTR_FROM_DICT(textDict, @"dialogTitle"),
-		GET_CFSTR_FROM_DICT(textDict, @"dialogMsg"),
-		GET_CFSTR_FROM_DICT(textDict, @"btnHeadphone"),
-		GET_CFSTR_FROM_DICT(textDict, @"btnLinein"),
-		//GET_CFSTR_FROM_DICT(textDict, @"btnCancel"),
-		GET_CFSTR_FROM_DICT(textDict, @"btnHeadset"),
-        responsecode // CFOptionFlags *responseFlags
-    );
-}
-
 uint32_t CFPopUpMenu()
 {
     CFOptionFlags responsecode;
-    uint32_t status;
-	
+    
     while(true)
     {
-		//wait until user logged in
+        //wait until user logged in
         stat("/dev/console", &consoleinfo);
         if (!consoleinfo.st_uid)
         {
@@ -644,57 +625,67 @@ uint32_t CFPopUpMenu()
             continue;
         }
         else if ((GETJACKSTATUS() & 0x80000000) != 0x80000000)
-        {
             return unplugged();
-        }
         if (awake) awake = false;
-		//get current locale settings
+        //get current locale settings
         NSString *locale = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleLocale"];
         //load localized strings
-		NSDictionary* CurDict = [l10nDict objectForKey:locale];
-		NSMutableDictionary *merged = dlgText.mutableCopy;
-		[merged addEntriesFromDictionary: CurDict];
-		displayDlg(iconUrl, (NSDictionary *)merged, &responsecode);
-		break;
+        NSDictionary* CurDict = [l10nDict objectForKey:locale];
+        NSMutableDictionary* Merged = dlgText.mutableCopy;
+        [Merged addEntriesFromDictionary: CurDict];
+        //display dialog
+        CFUserNotificationDisplayAlert(
+                0, // CFTimeInterval timeout
+                kCFUserNotificationNoteAlertLevel, // CFOptionFlags flags
+                iconUrl, // CFURLRef iconURL (file location URL)
+                NULL, // CFURLRef soundURL (unused)
+                NULL, // CFURLRef localizationURL
+                GET_CFSTR_FROM_DICT(Merged, @"dialogTitle"), //CFStringRef alertHeader
+                GET_CFSTR_FROM_DICT(Merged, @"dialogMsg"), //CFStringRef alertMessage
+                GET_CFSTR_FROM_DICT(Merged, @"btnHeadphone"), //CFStringRef defaultButtonTitle
+                GET_CFSTR_FROM_DICT(Merged, @"btnLinein"), //CFStringRef alternateButtonTitle
+                //GET_CFSTR_FROM_DICT(Merged, @"btnCancel"), //CFStringRef alternateButtonTitle
+                GET_CFSTR_FROM_DICT(Merged, @"btnHeadset"), //CFStringRef otherButtonTitle
+                &responsecode // CFOptionFlags *responseFlags
+        );
+        break;
     }
     
     if ((GETJACKSTATUS() & 0x80000000) != 0x80000000)
         return unplugged();
     
     /* Responses are of this format:
-     
      kCFUserNotificationDefaultResponse     = 0,
      kCFUserNotificationAlternateResponse   = 1,
      kCFUserNotificationOtherResponse       = 2,
      kCFUserNotificationCancelResponse      = 3
-     
      */
     
     switch (responsecode)
     {
         case kCFUserNotificationDefaultResponse:
-            fprintf(stderr, "Headphones selected.\n"); // %lu\n", kCFUserNotificationDefaultResponse);
-            status = headphones();
+            fprintf(stderr, "Headphones selected.\n");
+            return headphones();
             break;
         case kCFUserNotificationAlternateResponse:
-            fprintf(stderr, "Line-In selected.\n"); // %lu\n", kCFUserNotificationAlternateResponse);
-            status = linein();
+            fprintf(stderr, "Line-In selected.\n");
+            return linein();
             //Cancel
             //fprintf(stderr, "Cancelled.\n");
-            //status = 0; // Maintain current state
+            //return 0; // Maintain current state
             break;
         case kCFUserNotificationOtherResponse:
-            fprintf(stderr, "Headset selected.\n"); // %lu\n", kCFUserNotificationOtherResponse);
-            status = headsetcheck();
+            fprintf(stderr, "Headset selected.\n");
+            return headsetcheck();
             break;
         default:
             fprintf(stderr, "Cancelled.\n");
-        //    status = unplugged(); // This was originally meant to reset the jack state to "unplugged," but "maintaining current state" is more intuitive
-            status = 0; // Maintain current state
+        //    return unplugged(); // This was originally meant to reset the jack state to "unplugged," but "maintaining current state" is more intuitive
+            return 0; // Maintain current state
             break;
     }
     
-    return status;
+    return 0;
 }
 
 //
@@ -845,11 +836,11 @@ int main()
 {
     fprintf(stderr, "Starting jack watcher.\n");
     //Allow only one instance
-	if (sem_open("XPS_ComboJack_Watcher", O_CREAT, 600, 1) == SEM_FAILED) 
-	{
-		fprintf(stderr, "Another instance is already running!\n");
-		return 1;
-	}
+    if (sem_open("XPS_ComboJack_Watcher", O_CREAT, 600, 1) == SEM_FAILED) 
+    {
+        fprintf(stderr, "Another instance is already running!\n");
+        return 1;
+    }
     // Set up error handler
     signal(SIGHUP, sigHandler);
     signal(SIGTERM, sigHandler);
@@ -913,12 +904,12 @@ int main()
     {
         NSError *error = nil;
         id l10nObj = [NSJSONSerialization 
-			JSONObjectWithData:[NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"]
-			options:0 error:&error];
+            JSONObjectWithData:[NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"]
+            options:0 error:&error];
         if(!error && [l10nObj isKindOfClass:[NSDictionary class]])
             l10nDict = l10nObj;
-	}
-	dlgText = [[NSDictionary alloc] initWithObjectsAndKeys:
+    }
+    dlgText = [[NSDictionary alloc] initWithObjectsAndKeys:
         @"Combo Jack Notification", @"dialogTitle",
         @"What did you just plug in? (Press ESC to cancel)", @"dialogMsg",
         @"Headphones", @"btnHeadphone",
