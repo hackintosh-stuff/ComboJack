@@ -155,12 +155,6 @@ int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 //dialog text
 NSDictionary *l10nDict = nil;
 NSDictionary *dlgText;
-CFStringRef dialogTitle;
-CFStringRef dialogMsg;
-CFStringRef btnHeadphone;
-CFStringRef btnLinein;
-CFStringRef btnHeadset;
-CFStringRef btnCancel;
 
 //
 // Open connection to IOService
