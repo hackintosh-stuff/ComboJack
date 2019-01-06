@@ -1,18 +1,25 @@
 #!/bin/bash
-cd `dirname $0`
+
+if [[ $EUID -ne 0 ]];
+then
+    exec sudo /bin/bash "$0" "$@"
+fi
+
+cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 # Clean legacy stuff
 #
-sudo launchctl unload /Library/LaunchDaemons/com.XPS.ComboJack.plist
+sudo launchctl unload /Library/LaunchDaemons/com.XPS.ComboJack.plist 2>/dev/null
 sudo rm -rf /Library/Extensions/CodecCommander.kext
-sudo rm /usr/local/bin/ALCPlugFix
-sudo rm /Library/LaunchAgents/good.win.ALCPlugFix
-sudo rm /Library/LaunchDaemons/good.win.ALCPlugFix
-sudo rm /usr/local/sbin/hda-verb
-sudo rm /usr/local/share/ComboJack/Headphone.icns
-sudo rm /usr/local/share/ComboJack/l10n.json
+sudo rm -f /usr/local/bin/ALCPlugFix
+sudo rm -f /Library/LaunchAgents/good.win.ALCPlugFix
+sudo rm -f /Library/LaunchDaemons/good.win.ALCPlugFix
+sudo rm -f /usr/local/sbin/hda-verb
+sudo rm -f /usr/local/share/ComboJack/Headphone.icns
+sudo rm -f /usr/local/share/ComboJack/l10n.json
 
 # install 
+mkdir -p /usr/local/sbin
 sudo cp ComboJack /usr/local/sbin
 sudo chmod 755 /usr/local/sbin/ComboJack
 sudo chown root:wheel /usr/local/sbin/ComboJack
