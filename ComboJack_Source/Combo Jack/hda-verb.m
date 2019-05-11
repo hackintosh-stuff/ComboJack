@@ -128,13 +128,14 @@ typedef uint64_t u64;
 
 #define GETJACKSTATUS() VerbCommand(HDA_VERB(REALTEK_HP_OUT, AC_VERB_GET_PIN_SENSE, 0x00))
 #define VERBSTUB_SERVICE "com_XPS_VerbStub"
+#define CODECCOMMANDER_SERVICE "CodecCommander"
 #define GET_CFSTR_FROM_DICT(_dict, _key) (__bridge CFStringRef)[_dict objectForKey:_key]
 
 //
 // Global Variables
 //
 CFURLRef iconUrl = NULL;
-io_service_t VerbStubIOService;
+io_service_t VerbIOService;
 io_connect_t DataConnection;
 uint32_t connectiontype = 0;
 bool run = true;
@@ -175,24 +176,29 @@ uint32_t OpenServiceConnection()
     // accessible file (just look at how simple the hda-verb program in alsa-tools is! All it uses is ioctl).
     //
     
-    CFMutableDictionaryRef dict = IOServiceMatching(VERBSTUB_SERVICE);
+    CFMutableDictionaryRef verbDict = IOServiceMatching(VERBSTUB_SERVICE);
+    CFMutableDictionaryRef codecCommanderDict = IOServiceMatching(CODECCOMMANDER_SERVICE);
     
     // Use IOServiceGetMatchingService since we can reasonably expect "VerbStub" is the only IORegistryEntry of its kind.
     // Otherwise IOServiceGetMatchingServices with an iterating algorithm must be used to find the kernel extension.
     
-    VerbStubIOService = IOServiceGetMatchingService(kIOMasterPortDefault, dict);
+    VerbIOService = IOServiceGetMatchingService(kIOMasterPortDefault, verbDict);
+    
+    // If VerbStub is not available, try CodecCommander
+    if (!VerbIOService) {
+        VerbIOService = IOServiceGetMatchingService(kIOMasterPortDefault, codecCommanderDict);
+    }
     
     // Hopefully the kernel extension loaded properly so it can be found.
-    
-    if (!VerbStubIOService)
+    if (!VerbIOService)
     {
-        fprintf(stderr, "Could not locate VerbStub kext. Ensure it is loaded; verbs cannot be sent otherwise.\n");
+        fprintf(stderr, "Could not locate VerbStub or CodecCommander kext. Ensure it is loaded; verbs cannot be sent otherwise.\n");
         return -1;
     }
     
     // Connect to the IOService object
     // Note: kern_return_t is just an int
-    kern_return_t kernel_return_status = IOServiceOpen(VerbStubIOService, mach_task_self(), connectiontype, &DataConnection);
+    kern_return_t kernel_return_status = IOServiceOpen(VerbIOService, mach_task_self(), connectiontype, &DataConnection);
     
     if (kernel_return_status != kIOReturnSuccess)
     {
@@ -259,7 +265,7 @@ static uint32_t VerbCommand(uint32_t command)
 void CloseServiceConnection()
 {
     // Done with the VerbStub IOService object, so we don't need to hold on to it anymore
-    IOObjectRelease(VerbStubIOService);
+    IOObjectRelease(VerbIOService);
     IODeregisterForSystemPower(&notifierObject);
 }
 
@@ -776,7 +782,7 @@ void SleepWakeCallBack( void * refCon, io_service_t service, natural_t messageTy
 void watcher(void)
 {
     IONotificationPortRef  notifyPortRef;
-    void*                  refCon;
+    void*                  refCon = NULL;
     root_port = IORegisterForSystemPower( refCon, &notifyPortRef, SleepWakeCallBack, &notifierObject );
     if ( root_port == 0 )
     {
@@ -802,7 +808,7 @@ void getAudioID()
     io_service_t HDACodecDevIOService;
     io_service_t HDACtrlIOService;
     io_service_t pciDevIOService;
-    IORegistryEntryGetParentEntry(VerbStubIOService, kIOServicePlane, &HDACodecFuncIOService); //IOHDACodecFunction
+    IORegistryEntryGetParentEntry(VerbIOService, kIOServicePlane, &HDACodecFuncIOService); //IOHDACodecFunction
     IORegistryEntryGetParentEntry(HDACodecFuncIOService, kIOServicePlane, &HDACodecDrvIOService);  //IOHDACodecDriver
     IORegistryEntryGetParentEntry(HDACodecDrvIOService, kIOServicePlane, &HDACodecDevIOService); //IOHDACodecDevice
     IORegistryEntryGetParentEntry(HDACodecDevIOService, kIOServicePlane, &HDACtrlIOService);//AppleHDAController
@@ -894,6 +900,7 @@ int main()
     if (!CFURLResourceIsReachable(iconUrl, NULL))
         iconUrl = NULL;
     //NSData *l10nData = [NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"];
+    /*
     if(NSClassFromString(@"NSJSONSerialization"))
     {
         NSError *error = nil;
@@ -903,6 +910,7 @@ int main()
         if(!error && [l10nObj isKindOfClass:[NSDictionary class]])
             l10nDict = l10nObj;
     }
+     */
     dlgText = [[NSDictionary alloc] initWithObjectsAndKeys:
         @"Combo Jack Notification", @"dialogTitle",
         @"What did you just plug in? (Press ESC to cancel)", @"dialogMsg",
