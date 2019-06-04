@@ -738,6 +738,7 @@ void alcInit()
             VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24));
             VerbCommand(HDA_VERB(0x1a, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x20));
             VerbCommand(HDA_VERB(0x21, AC_VERB_SET_UNSOLICITED_ENABLE, 0x83));
+            VerbCommand(HDA_VERB(0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0xC0));
             break;
         case 0x10ec0298:
             VerbCommand(HDA_VERB(0x18, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x22));
