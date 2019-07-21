@@ -7,13 +7,36 @@
         "btnHeadset" : "耳麦",
         "btnCancel" : "取消"
     },
-
-        "en_US": {
-                "dialogTitle" : "Combo Jack Notification",
-                "dialogMsg" : "What did you just plug in? (Press ESC to cancel)",
-                "btnHeadphone" : "Headphones",
-                "btnLinein" : "Line-In",
-                "btnHeadset" : "Headset",
-                "btnCancel" : "Cancel"
-        }
+    "en_US": {
+        "dialogTitle" : "Combo Jack Notification",
+        "dialogMsg" : "What did you just plug in? (Press ESC to cancel)",
+        "btnHeadphone" : "Headphones",
+        "btnLinein" : "Line-In",
+        "btnHeadset" : "Headset",
+        "btnCancel" : "Cancel"
+    },
+    "ru_RU": {
+        "dialogTitle" : "Combo Jack Notification",
+        "dialogMsg" : "Какое устройство было подключено? (ESC для отмены)",
+        "btnHeadphone" : "Наушники",
+        "btnLinein" : "Линейный вход",
+        "btnHeadset" : "Гарнитура",
+        "btnCancel" : "Отмена"
+    },
+    "ru_UA": {
+        "dialogTitle" : "Combo Jack Notification",
+        "dialogMsg" : "Какое устройство было подключено? (ESC для отмены)",
+        "btnHeadphone" : "Наушники",
+        "btnLinein" : "Линейный вход",
+        "btnHeadset" : "Гарнитура",
+        "btnCancel" : "Отмена"
+    },
+    "uk_UA": {
+        "dialogTitle" : "Combo Jack Notification",
+        "dialogMsg" : "Який пристрій було підключено? (ESC для скасування)",
+        "btnHeadphone" : "Навушники",
+        "btnLinein" : "Лінійний вхід",
+        "btnHeadset" : "Гарнітура",
+        "btnCancel" : "Скасувати"
+    }
 }
