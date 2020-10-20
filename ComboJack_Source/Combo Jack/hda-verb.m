@@ -614,7 +614,9 @@ void JackBehavior()
 uint32_t CFPopUpMenu()
 {
     CFOptionFlags responsecode;
-    
+    responsecode = 0;
+    fprintf(stderr, "Response code before value: %lu.\n", responsecode);
+
     while(true)
     {
         //wait until user logged in
@@ -660,7 +662,11 @@ uint32_t CFPopUpMenu()
      kCFUserNotificationOtherResponse       = 2,
      kCFUserNotificationCancelResponse      = 3
      */
-    
+
+    fprintf(stderr, "Response code after: %lu.\n", responsecode);
+    responsecode = (responsecode << 40) >> 40;
+    fprintf(stderr, "Response code fixed: %lu.\n", responsecode);
+
     switch (responsecode)
     {
         case kCFUserNotificationDefaultResponse:
@@ -802,7 +808,7 @@ void watcher(void)
 //Get onboard audio device info, adapted from DPCIManager
 void getAudioID()
 {
-    codecID = 0, subVendor = 0, subDevice = 0;
+    (void)(codecID = 0), (void)(subVendor = 0), subDevice = 0;
     io_service_t HDACodecFuncIOService;
     io_service_t HDACodecDrvIOService;
     io_service_t HDACodecDevIOService;
@@ -836,7 +842,7 @@ int main()
 {
     fprintf(stderr, "Starting jack watcher.\n");
     //Allow only one instance
-    if (sem_open("XPS_ComboJack_Watcher", O_CREAT, 600, 1) == SEM_FAILED) 
+    if (sem_open("XPS_ComboJack_Watcher", O_CREAT, 600, 1) == SEM_FAILED)
     {
         fprintf(stderr, "Another instance is already running!\n");
         return 1;
