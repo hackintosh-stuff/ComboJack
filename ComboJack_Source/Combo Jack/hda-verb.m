@@ -150,7 +150,8 @@ struct stat consoleinfo;
 long codecID = 0;
 uint32_t subVendor = 0;
 uint32_t subDevice = 0;
-long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
+#define codecIDArr_len 4
+long codecIDArr[codecIDArr_len] = {0x10ec0257, 0x10ec0256, 0x10ec0255, 0x10ec0298};
 int xps13SubDev[3] = {0x0704, 0x075b, 0x082a};
 
 //dialog text
@@ -739,6 +740,7 @@ void alcInit()
             WRITE_COEF(0x46, 0x0004);
             WRITE_COEF(0x1b, 0x0c4b);
             break;
+        case 0x10ec0257:
         case 0x10ec0255:
         ALC255_COMMON:
             VerbCommand(HDA_VERB(0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24));
@@ -885,7 +887,7 @@ int main()
     // Get audio device info, exit if no compatible device found
     getAudioID();
     //long codecIDArr[3] = {0x10ec0256, 0x10ec0255, 0x10ec0298};
-    if (indexOf_L(codecIDArr, 3, codecID) == -1 || ! subVendor || !subDevice)
+    if (indexOf_L(codecIDArr, codecIDArr_len, codecID) == -1 || ! subVendor || !subDevice)
     {
         fprintf(stderr, "No compatible audio device found! Exit now.\n");
         return 1;
