@@ -111,7 +111,19 @@ bool com_XPS_VerbStub::start(IOService *provider)
     AudioDevc = provider;
     
     HDADevice = new IntelHDA(provider, PIO);
-    if (!HDADevice || !HDADevice->initialize())
+    if (!HDADevice)
+    {
+        IOLog("Error malloc HDADevice instance.\n");
+        stop(provider);
+        return false;
+    }
+    if ((HDADevice->getCodecVendorId() & 0xFFFF0000) == 0x80860000)
+    {
+        IOLog("Skip initializing HDMI/DP instance.\n");
+        stop(provider);
+        return false;
+    }
+    if (!HDADevice->initialize())
     {
         IOLog("Error initializing HDADevice instance.\n");
         stop(provider);
