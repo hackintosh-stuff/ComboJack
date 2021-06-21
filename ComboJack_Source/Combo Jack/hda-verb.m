@@ -908,7 +908,7 @@ int main()
     if (!CFURLResourceIsReachable(iconUrl, NULL))
         iconUrl = NULL;
     //NSData *l10nData = [NSData dataWithContentsOfFile:@"/usr/local/share/ComboJack/l10n.json"];
-    /*
+
     if(NSClassFromString(@"NSJSONSerialization"))
     {
         NSError *error = nil;
@@ -918,7 +918,7 @@ int main()
         if(!error && [l10nObj isKindOfClass:[NSDictionary class]])
             l10nDict = l10nObj;
     }
-     */
+
     dlgText = [[NSDictionary alloc] initWithObjectsAndKeys:
         @"Combo Jack Notification", @"dialogTitle",
         @"What did you just plug in? (Press ESC to cancel)", @"dialogMsg",
