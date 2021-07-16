@@ -14,24 +14,27 @@ sudo rm -rf /Library/Extensions/CodecCommander.kext
 sudo rm -f /usr/local/bin/ALCPlugFix
 sudo rm -f /Library/LaunchAgents/good.win.ALCPlugFix
 sudo rm -f /Library/LaunchDaemons/good.win.ALCPlugFix
-sudo rm -f /usr/local/sbin/hda-verb
+sudo rm -f /usr/local/bin/hda-verb
 sudo rm -f /usr/local/share/ComboJack/Headphone.icns
 sudo rm -f /usr/local/share/ComboJack/l10n.json
 
-# install 
-mkdir -p /usr/local/sbin
-sudo cp ComboJack /usr/local/sbin
-sudo chmod 755 /usr/local/sbin/ComboJack
-sudo chown root:wheel /usr/local/sbin/ComboJack
-sudo spctl --add /usr/local/sbin/ComboJack
-sudo cp hda-verb /usr/local/sbin
-#sudo chmod 755 /usr/local/sbin/hda-verb
-#sudo chown root:wheel /usr/local/sbin/hda-verb
+# install ComboJack
+sudo cp ComboJack /usr/local/bin
+sudo chmod 755 /usr/local/bin/ComboJack
+sudo chown root:wheel /usr/local/bin/ComboJack
+sudo spctl --add /usr/local/bin/ComboJack
+# install hda-verb
+sudo cp hda-verb /usr/local/bin
+sudo chmod 755 /usr/local/bin/hda-verb
+sudo chown root:wheel /usr/local/bin/hda-verb
+# install Headphone.icns
 sudo mkdir -p /usr/local/share/ComboJack/
 sudo cp Headphone.icns /usr/local/share/ComboJack/
 sudo chmod 644 /usr/local/share/ComboJack/Headphone.icns
+# install l10n.json
 sudo cp l10n.json /usr/local/share/ComboJack/
 sudo chmod 644 /usr/local/share/ComboJack/l10n.json
+# install com.XPS.ComboJack.plist
 sudo cp com.XPS.ComboJack.plist /Library/LaunchDaemons/
 sudo chmod 644 /Library/LaunchDaemons/com.XPS.ComboJack.plist
 sudo chown root:wheel /Library/LaunchDaemons/com.XPS.ComboJack.plist

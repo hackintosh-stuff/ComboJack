@@ -13,9 +13,9 @@ sudo rm /Library/LaunchDaemons/com.XPS.ComboJack.plist
 sudo rm /usr/local/share/ComboJack/l10n.json
 sudo rm /usr/local/share/ComboJack/Headphone.icns
 sudo rm -r /usr/local/share/ComboJack
-sudo rm /usr/local/sbin/hda-verb
-sudo spctl --remove /usr/local/sbin/ComboJack
-sudo rm /usr/local/sbin/ComboJack
+sudo rm /usr/local/bin/hda-verb
+sudo spctl --remove /usr/local/bin/ComboJack
+sudo rm /usr/local/bin/ComboJack
 echo
 echo "Please reboot! Remember to remove VerbStub.kext as well."
 echo
