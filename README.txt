@@ -4,6 +4,9 @@ Confirmed to work on dell xps 13 9350/9360(alc256) and Xiaomi Air(i5-7200U, alc2
 2. Run ComboJack_Installer/install.sh in terminal and reboot
 3. Done. When you attach a headphone there will be a popup asking about headphone type.
 
+I know CleanMyMac reports this as mining malware, but I don't think CleanMyMac is a serious anti-malware. If you really believe these false alarms then compile by yourself (don't ask how).
+
+
 黑苹果上alc256/alc255的耳麦支持
 在xps 13 9350/9360(alc256)和小米Air(i5-7200U, alc255)上测试可用
 1. 删除 CodecCommander.kext，把ComboJack_Installer文件夹的VerbStub.kext放进Clover/kexts/Other
